@@ -10,7 +10,7 @@
 
 > Click the thumbnail below to watch the full project walkthrough
 
-[![RAG over Google Drive – Demo Video](https://img.shields.io/badge/▶%20Watch%20Demo%20Video-Click%20Here-red?style=for-the-badge&logo=youtube)](YOUR_VIDEO_LINK_HERE)
+[![RAG over Google Drive – Demo Video](https://img.shields.io/badge/▶%20Watch%20Demo%20Video-Click%20Here-red?style=for-the-badge&logo=youtube)](https://drive.google.com/file/d/1QfxqLf05ZEybZPY2NS8XlGTPI5szNSLx/view?usp=sharing)
 
 
 
@@ -47,10 +47,17 @@ My Drive/
     ├── GATE-CS-2025-Set-2-Master-Question-Paper.pdf  (GATE CSE Paper Set 2)
     ├── GATE-DA-2025-Master-Question-Paper.pdf        (GATE Data Science & AI Paper)
     ├── 23f2005282_DG_T12026.pdf                      (Deep Learning Project Report)
-    └── TechNova_Company_Policies.gdoc                (Company Policy Document — Google Doc)
+    ├── TechNova_Company_Policies.docx                (Company Policy Document — uploaded Word doc)
 ```
 
-**5 files → 63 vectors indexed**
+**6 files → 63 vectors indexed**
+
+> ⚠️ **Note on `.docx` support:** The `TechNova_Company_Policies.docx` is an **uploaded Word
+> document**, not a native Google Doc. Google Drive stores these with MIME type
+> `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, which is distinct
+> from `application/vnd.google-apps.document` (native Google Docs). The connector explicitly
+> handles both: native Google Docs are exported as `text/plain` via the Drive export API, while
+> uploaded `.docx` files are downloaded as raw bytes and parsed locally with `python-docx`.
 
 The service account has **Viewer access only** to this folder (least privilege).  
 New documents can be added and re-indexed with a single `POST /sync-drive` call locally.
@@ -61,16 +68,18 @@ New documents can be added and re-indexed with a single `POST /sync-drive` call 
 
 ```
 Google Drive folder (ragdocs/)
-        │  all PDFs / Docs / TXT fetched in one API call
+        │  all PDFs / Docs / DOCX / TXT fetched in one API call
         ▼
 connectors/gdrive.py
   • Service account auth (Viewer role — least privilege)
-  • Lists PDF, Google Docs, TXT — skips unsupported types
-  • PDFs → get_media() | Google Docs → export as text/plain
+  • Lists PDF, Google Docs, uploaded .docx, TXT — skips unsupported types
+  • PDFs / .docx → get_media() (raw bytes)
+  • Native Google Docs → export as text/plain
         │
         ▼
 processing/parser.py
   • PDF  → PyMuPDF page-by-page text extraction
+  • DOCX → python-docx paragraph extraction
   • TXT/Docs → UTF-8 / latin-1 decode with fallback
   • Cleans: collapsed whitespace, normalised newlines
         │
@@ -123,7 +132,7 @@ project/
 │   └── generator.py        AI Pipe / gpt-4o-mini
 ├── processing/
 │   ├── chunking.py         Sliding-window chunker
-│   └── parser.py           PDF + text extraction
+│   └── parser.py           PDF + DOCX + text extraction
 ├── search/
 │   └── faiss_store.py      FAISS index management
 ├── tests/
@@ -226,7 +235,7 @@ Open **http://localhost:8000/docs** for Swagger UI.
 {
   "query": "What is the refund policy at TechNova Solutions?",
   "top_k": 5,
-  "doc_filter": "TechNova_Company_Policies.gdoc"
+  "doc_filter": "TechNova_Company_Policies.docx"
 }
 ```
 
@@ -242,7 +251,7 @@ Open **http://localhost:8000/docs** for Swagger UI.
   "answer": "TechNova Solutions offers a 30-day money-back guarantee for all new annual subscriptions. Refund requests must be submitted in writing to billing@technovasolutions.com within 30 days of the initial purchase. After the 30-day window, partial refunds may be granted on a pro-rata basis only for verified service outages or unresolved product defects.",
   "sources": [
     {
-      "file": "TechNova_Company_Policies.gdoc",
+      "file": "TechNova_Company_Policies.docx",
       "chunk": "TechNova offers a 30-day money-back guarantee for all new annual subscriptions..."
     }
   ],
@@ -332,6 +341,7 @@ The pre-built FAISS index (`data/`) is committed to the repo so the server loads
 | No LangChain | Direct implementation | Full control, transparent pipeline, minimal dependencies |
 | Drive auth | Service account | Server-side, no user OAuth flow required |
 | Pre-built index | Committed `data/` | Avoids Render 512MB OOM and 30s timeout on free tier |
+| DOCX parsing | `python-docx` (raw download) | Uploaded `.docx` files are not native Google Docs and cannot use the Drive export API; raw download + python-docx gives reliable paragraph-level extraction |
 
 ---
 
