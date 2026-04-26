@@ -29,6 +29,7 @@ SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 SUPPORTED_MIME = {
     "application/pdf",
     "application/vnd.google-apps.document",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "text/plain",
 }
 
@@ -80,8 +81,11 @@ def download_file(service, file_meta: dict) -> bytes:
     file_id = file_meta["id"]
     mime = file_meta["mimeType"]
 
-    if mime in EXPORT_MAP:
-        # Google Workspace doc → export
+    DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+    # Google Docs → export as text
+    # DOCX → download raw (do NOT export)
+    if mime in EXPORT_MAP and mime != DOCX_MIME:
         request = service.files().export_media(
             fileId=file_id, mimeType=EXPORT_MAP[mime]
         )
@@ -95,7 +99,6 @@ def download_file(service, file_meta: dict) -> bytes:
         _, done = downloader.next_chunk()
 
     return buf.getvalue()
-
 
 def fetch_documents() -> Generator[Tuple[str, str, bytes], None, None]:
     """

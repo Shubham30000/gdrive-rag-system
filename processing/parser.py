@@ -14,6 +14,7 @@ import logging
 import re
 import tempfile
 from pathlib import Path
+import docx
 
 import fitz  # PyMuPDF
 
@@ -61,21 +62,22 @@ def parse_plain_text(raw_bytes: bytes) -> str:
 def extract_text(file_name: str, mime_type: str, raw_bytes: bytes) -> str:
     """
     Route raw bytes to the correct parser.
-
-    Args:
-        file_name:  original file name (used for logging / fallback routing)
-        mime_type:  MIME string from Google Drive
-        raw_bytes:  raw file content
-
-    Returns:
-        Cleaned plain-text string.  Empty string if extraction fails.
     """
+    DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
     try:
         if mime_type == "application/pdf" or file_name.lower().endswith(".pdf"):
             return parse_pdf(raw_bytes)
+
+        elif mime_type == DOCX_MIME or file_name.lower().endswith(".docx"):
+            doc = docx.Document(io.BytesIO(raw_bytes))
+            text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+            return _clean(text)
+
         else:
-            # Google Docs (already exported as text/plain) and .txt files
+            # Google Docs (exported as text/plain) and .txt files
             return parse_plain_text(raw_bytes)
+
     except Exception as exc:
         logger.error("Text extraction failed for %s: %s", file_name, exc)
         return ""
