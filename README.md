@@ -11,7 +11,7 @@ so every component is fully transparent and controllable.
 
 ## 🎬 Demo Video
 
-[![RAG over Google Drive – Demo Video](https://img.shields.io/badge/▶%20Watch%20Demo%20Video-Click%20Here-red?style=for-the-badge&logo=youtube)](https://drive.google.com/file/d/1QfxqLf05ZEybZPY2NS8XlGTPI5szNSLx/view?usp=sharing)
+[![RAG over Google Drive – Demo Video](https://img.shields.io/badge/▶%20Watch%20Demo%20Video-Click%20Here-red?style=for-the-badge&logo=youtube)](https://drive.google.com/file/d/16nMZ-v9SvQAtv5cym3eMfwSMUecMKbyS/view?usp=sharing)
 
 **What the demo covers:**
 - Google Drive integration and live document sync
